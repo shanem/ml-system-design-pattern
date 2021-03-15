@@ -15,7 +15,7 @@ If there is a best practice for your purpose, or if it is well enough with trans
 
 ## Pros
 - Automatically tune a machine learning model.
-- Possible to discover a model that could not be manually.
+- Possible to discover a model that could not be discovered manually.
 
 ## Cons
 - Needs parameter to search.
