@@ -4,7 +4,7 @@
 - When you need to manage data and model versions, which is most of the cases in using machine learning for production.
 
 ## Architecture
-It is difficult of manage version of machine learning model. Just releasing a model into production system requires various components that need version, or naming, management.
+Machine learning model versioning is difficult. Just releasing a model into production system requires various components whose versioning and naming need to be managed.
 
 - Purpose of using machine learning for the project
   - Value (stock price forecast, anomaly detection, face recognition, etc)
@@ -19,14 +19,14 @@ It is difficult of manage version of machine learning model. Just releasing a mo
   - Training code and pipeline
   - Inference code and pipeline
   - Environment to run the code and pipeline: library, OS, language, infrastructure and their version
-- Hyperparameter
+- Hyperparameters
   - Depends on algorithm and library
 - Data
   - Data retrieval
   - Splitting of training and testing data (and evaluation data)
 
-In order to make your machine learning reproducible, you need to manage the versions of these components, with reproducibility of the components and model. Since these components are usually managed in differenct repository or DWH, having uniqueness through the warehouses is expected.<br>
-This is one of the suggested idea of the versioning.<br>
+In order to make your machine learning reproducible, you need to manage the versions of these components, with reproducibility of the components and model. Since these components are usually managed in different repositories or DWHs, having globally unique names across warehouses is preferable.<br>
+This is one suggested versioning scheme:<br>
 `model-name x.y.z-data.split` 
 
 - Model name (`MODEL-NAME x.y.z-data.split`)
@@ -37,29 +37,29 @@ This is one of the suggested idea of the versioning.<br>
 - Data store version (`model-name x.y.z-data.SPLIT`)
 
 #### Model name (`MODEL-NAME x.y.z-data.split`)
-You ought to give a name to your model. In order to avoid losing identifying a model in your communication, a name is mandatory. Also, people feel attached to something with a name. Giving a name based on its value or function may make easier to identify, though the naming rule can be defined within your team.<br>
+You ought to give a name to your model. In order to avoid losing track of a model in your communication, a name is mandatory. Also, people feel attached to something with a name. Giving a name based on the model's value or function may make it easier to identify, though naming conventions may be defined by your team.<br>
 
 #### Release version (`model-name X.y.z-data.split`)
 There are two conditions for a model: prerelease and released. For prereleased model, you give `0` to `X` and for released, `1` or higher.<br>
 
 #### Interface version for input and output (`model-name x.Y.z-data.split`)
-A machine learning model gives a prediction to your input data. It may differ with your usecase and algorithm, but it is always common on providing an input and getting a prediction. Once its in-out structure changes, you have to change external interface, so it is recommended to manage the interface version to identify with external system. Those interfaces, as well as their datatype and structure, are managed in a code repository, such as Git. It may be good to use Swagger or Protocol Buffer to publicize your API definition externally. <br>
-In the interface versioning, you have to only manage the version for your in-out interface, and not internal algorithm, library and model evaluation. Its algorithm and library are managed in logic version, and the model evaluation in model version in a model repository. For the versioning rule, you may start with `0` and increment with update to keep uniqueness of the interface.
+A machine learning model gives a prediction to your input data. It may differ depending on your use case and algorithm, but it is will always require an input and return a prediction. When the shape of a model's inputs or outputs change the external interface must be changed accordingly, so managing the interface version to correspond with external system is recommended. Those interfaces, as well as their datatypes and structure, are managed in a code repository, such as Git. It may be good to use Swagger or Protocol Buffers to publicize your API definition externally. <br>
+In the interface versioning, you should only manage the version for your public interface, and not the internals of the model, algorithm, or libraries. The algorithm and library versions are managed in the logic portion of the versioning scheme, and model evaluation metrics should be stored in a model repository. For the versioning rule, you may start with `0` and increment to ensure that each change to the interface gets a unique version number.
 
 #### Logic version including algorithm, library and hyperparameter (`model-name x.y.Z-data.split`)
-There are plenty of preprocess and prediction algorithms in machine learning training and prediction, including optimization and loss fuction. Usage and tunable parameters vary depending on its language and library. The logic versioning controls preprocess, algorithm, library, and parameter that do not change interface. These changes will be managed in a code repository as a branch. It is not necessary to manage every version at experimental and development stage, or you will lose control of versioning if you do. Suggested to start version management once the model is ready for your team review.<br>
-There may be a chance that model's evaluation or loss may differ without changing its algorithm and paramater. In that case, you may store the evaluation along with a training version in your model repository. Since it is difficult to control the variation, it is better to manage as a set of training and evaluation instead of its model version.
+Training an ML algorithm may include many parts, including preprocessing and prediction algorithms (linear regression, logistic regression, SVMs, CNN, etc.), as well as optimization and loss fuctions. Usage varies by language and libraries, and tunable parameters may be available as well. The logic version controls preprocessing, algorithm, library, and parameters that do not change the interface. These changes are usually managed in a code repository as a branch. Experimentation and development tends to involve exploring a diverse array of algorithms, libraries, and parameters, so it's not necessary to track every version (attempting to do so would result in dozens of versions and quickly get out of hand). Start version management once the model is ready for your team to review.<br>
+There may be a chance that model's evaluation metrics or loss may differ each time it's trained even without changing the algorithm or its paramaters. In that case, you may store the evaluation metrics along with a training version in your model repository. Since it is difficult to control this variation, it is better to manage as a set of training and evaluation instead of encoding it into the logic version.
 
 #### Data retrieval (`model-name x.y.z-DATA.split`) and Release version (`model-name X.y.z-data.split`)
-Data will be stored in some kind of DWH. Since dataset to be used in a training will be defined in the training phase, it is recommended to store the splitted data, training and testing, and maybe evaluation, separately. An important point of data versioning is to enable to retrieve the same data, without mixing up training and testing, to avoid abnormal evaluation. It is better to manage both data retrieval method as well as splitted dataset, to be able to retrieve the dataset again. At same time, it is recommended to record the dataset in specific DWH's (record in a table in database for structured data, and zip in an object storage or file storage for unstructured data).<br>
-It is necessary to manage versions for data retrieval method (`model-name x.y.z-DATA.split`) and splitted dataset (`model-name x.y.z-data.SPLIT`). Each may be better to use string versioning rather than incremental integer, or may use timestamp. The data retrieval method will be managed as query or data pipeline definition in a code repository, and dataset in DWH.
+Data will be stored in some kind of DWH. Since the dataset to be used for training will be defined in the training phase, the training, validation (and possibly test) data should be stored separately. An important point of data versioning is to enable retrieving the same data, without mixing up training and testing, so the trained model can be evaluated in a consistent manner. To enable restoring the dataset exactly, it is best to manage both the data retrieval method and the split method. The resulting split dataset should also be stored in appropriate DWH's (record in a table in database for structured data, and for unstructured data, a zip in an object or file storage system).<br>
+It is necessary to manage versions for the data retrieval method (`model-name x.y.z-DATA.split`) and the split dataset (`model-name x.y.z-data.SPLIT`). String versioning or timestamps may be preferable to an incrementing integer. The data retrieval method should be managed as query or data pipeline definition in Github (or other code repository), and the dataset in a DWH.
 <br>
 
 ---
 
-The interface, logic, and data retrieval are written in programming code, so they will be recorded in a code repository. If you manage them in branch, then those will naturally be controlled in the code repository's workflow, such as gitflow or github flow.<br>
-It is good to manage the model file and its evaluation in a model repository. A problem is that there are many model repository like software or service, though there is no standardized one, that you may need to define your workflow for the versioning.<br>
-The dataset are stored in your DWH or storage. It is good to give a name to the table and bucket corresponding to the version.
+The interface, logic, and data retrieval are defined in programming code, so they will be recorded in a code repository. If you manage them in branch, then those will naturally be controlled in the code repository's workflow, such as gitflow or github flow.<br>
+It is good to manage the model file and its evaluation metrics in a model repository. Various model repositories exist and and they aren't well-standardized, so you may need to adapt your versioning scheme to your model repository's workflow.<br>
+The dataset would be stored in your DWH or storage. The table or bucket should be named to correspond to the version.
 
 
 ## Diagram
